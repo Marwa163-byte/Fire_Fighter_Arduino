@@ -1,0 +1,210 @@
+// Pin Definitions
+#define enA 10  // Enable1 L298 Pin enA
+#define in1 9   // Motor1 L298 Pin in1
+#define in2 8   // Motor1 L298 Pin in2
+#define in3 7   // Motor2 L298 Pin in3
+#define in4 6   // Motor2 L298 Pin in4
+#define enB 5   // Enable2 L298 Pin enB
+#define ir_R A0 // Right IR Sensor Pin
+#define ir_F A1 // Front IR Sensor Pin
+#define ir_L A2 // Left IR Sensor Pin
+#define servo A4
+#define pump A5
+
+
+
+
+int Speed = 160; // Motor speed (0-255)
+int s1, s2, s3;  // Sensor readings
+
+
+
+
+// Function declaration
+void servoPulse(int pin, int angle);
+
+
+
+
+void setup() {
+  Serial.begin(9600);  // Start serial communication
+
+
+
+
+  // IR sensor pins
+  pinMode(ir_R, INPUT);
+  pinMode(ir_F, INPUT);
+  pinMode(ir_L, INPUT);
+
+
+
+
+  // Motor control pins
+  pinMode(enA, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+  pinMode(enB, OUTPUT);
+
+
+
+
+  // Servo and pump pins
+  pinMode(servo, OUTPUT);
+  pinMode(pump, OUTPUT);
+
+
+
+
+  // Set motor speed
+  analogWrite(enA, Speed);
+  analogWrite(enB, Speed);
+
+
+
+
+  // Initialize servo movement
+  for (int angle = 90; angle <= 140; angle += 5) {
+    servoPulse(servo, angle);
+  }
+  for (int angle = 140; angle >= 40; angle -= 5) {
+    servoPulse(servo, angle);
+  }
+  for (int angle = 40; angle <= 95; angle += 5) {
+    servoPulse(servo, angle);
+  }
+
+
+
+
+  delay(500);  // Small delay after setup
+}
+
+
+
+
+void loop() {
+  // Read sensor values
+  s1 = analogRead(ir_R);
+  s2 = analogRead(ir_F);
+  s3 = analogRead(ir_L);
+
+
+
+
+  // Debug print
+  Serial.print(s1);
+  Serial.print("\t");
+  Serial.print(s2);
+  Serial.print("\t");
+  Serial.println(s3);
+
+
+
+
+  delay(50);
+
+
+
+
+    // If flame is detected by any of the sensors, move towards it
+  if (s1 < 50) {
+    // Move right towards the flame
+     moveLeft();
+     // Activate pump when flame detected
+  }
+ else if (s2 < 150) {  // Flame detected in front
+  if (s2 > 30) {
+    moveForward();  // Move forward if flame is detected at a moderate distance
+  }
+  else if (s2 <= 30) {
+    Stop();  // Stop the robot if flame is too close
+    digitalWrite(pump, 1);  // Activate pump when flame is close to extinguish it
+
+
+    // Spray using servo
+    servoPulse(servo, 40);
+    servoPulse(servo, 140);
+    servoPulse(servo, 90);  // Center back
+  }
+}
+
+
+  else if (s3 < 50) {
+    // Move left towards the flame
+    moveRight();
+    // Activate pump when flame detected
+     
+  }
+  else {
+    // No flame detected
+    Stop();
+    digitalWrite(pump, 0);  // Pump OFF
+  }
+
+
+
+
+  delay(10);
+}
+
+
+
+
+// Movement Functions
+void moveForward() {
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
+}
+
+
+
+
+void moveRight() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
+}
+
+
+
+
+void moveLeft() {
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
+}
+
+
+
+
+void Stop() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+}
+
+
+
+
+// Servo control function
+void servoPulse(int pin, int angle) {
+  int pwm = (angle * 11) + 500;  // Convert angle to microseconds
+  digitalWrite(pin, HIGH);
+  delayMicroseconds(pwm);
+  digitalWrite(pin, LOW);
+  delay(50);  // Refresh cycle
+}
+
+
+
+
+
+
